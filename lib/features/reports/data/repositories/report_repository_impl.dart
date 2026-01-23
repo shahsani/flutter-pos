@@ -1,4 +1,3 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:test_pos/features/reports/domain/models/report_models.dart';
 import 'package:test_pos/features/reports/domain/repositories/report_repository.dart';
 
@@ -20,22 +19,23 @@ class ReportRepositoryImpl implements ReportRepository {
       '''
       SELECT 
         COUNT(*) as total_transactions,
-        SUM(total_amount) as total_sales
+        COALESCE(SUM(total_amount), 0) as total_sales
       FROM sales 
       WHERE sale_date BETWEEN ? AND ?
     ''',
       [startEpoch, endEpoch],
     );
 
-    final totalTransactions = Sqflite.firstIntValue(salesResult) ?? 0;
-    final totalSales =
-        (salesResult.first['total_sales'] as num?)?.toDouble() ?? 0.0;
+    // Parse results correctly
+    final row = salesResult.first;
+    final totalTransactions = (row['total_transactions'] as num?)?.toInt() ?? 0;
+    final totalSales = (row['total_sales'] as num?)?.toDouble() ?? 0.0;
 
     // Total Items Sold (Need to join or sum query)
     // Complex query due to sale_date being in 'sales' table and quantity in 'sale_items'
     final itemsResult = await db.rawQuery(
       '''
-      SELECT SUM(si.quantity) as total_items
+      SELECT COALESCE(SUM(si.quantity), 0) as total_items
       FROM sale_items si
       JOIN sales s ON si.sale_id = s.id
       WHERE s.sale_date BETWEEN ? AND ?
@@ -43,7 +43,8 @@ class ReportRepositoryImpl implements ReportRepository {
       [startEpoch, endEpoch],
     );
 
-    final totalItemsSold = Sqflite.firstIntValue(itemsResult) ?? 0;
+    final totalItemsSold =
+        (itemsResult.first['total_items'] as num?)?.toInt() ?? 0;
 
     return SalesReport(
       totalSales: totalSales,
