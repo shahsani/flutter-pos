@@ -1,0 +1,94 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:test_pos/features/reports/domain/models/report_models.dart';
+import 'package:test_pos/features/reports/domain/repositories/report_repository.dart';
+
+import '../../../../core/database/database_helper.dart';
+
+class ReportRepositoryImpl implements ReportRepository {
+  final DatabaseHelper _dbHelper;
+
+  ReportRepositoryImpl(this._dbHelper);
+
+  @override
+  Future<SalesReport> getSalesReport(DateTime start, DateTime end) async {
+    final db = await _dbHelper.database;
+    final startEpoch = start.millisecondsSinceEpoch;
+    final endEpoch = end.millisecondsSinceEpoch;
+
+    // Total Sales & Transactions
+    final salesResult = await db.rawQuery(
+      '''
+      SELECT 
+        COUNT(*) as total_transactions,
+        SUM(total_amount) as total_sales
+      FROM sales 
+      WHERE sale_date BETWEEN ? AND ?
+    ''',
+      [startEpoch, endEpoch],
+    );
+
+    final totalTransactions = Sqflite.firstIntValue(salesResult) ?? 0;
+    final totalSales =
+        (salesResult.first['total_sales'] as num?)?.toDouble() ?? 0.0;
+
+    // Total Items Sold (Need to join or sum query)
+    // Complex query due to sale_date being in 'sales' table and quantity in 'sale_items'
+    final itemsResult = await db.rawQuery(
+      '''
+      SELECT SUM(si.quantity) as total_items
+      FROM sale_items si
+      JOIN sales s ON si.sale_id = s.id
+      WHERE s.sale_date BETWEEN ? AND ?
+    ''',
+      [startEpoch, endEpoch],
+    );
+
+    final totalItemsSold = Sqflite.firstIntValue(itemsResult) ?? 0;
+
+    return SalesReport(
+      totalSales: totalSales,
+      totalTransactions: totalTransactions,
+      averageTransactionValue: totalTransactions == 0
+          ? 0
+          : totalSales / totalTransactions,
+      totalItemsSold: totalItemsSold,
+    );
+  }
+
+  @override
+  Future<List<TopSellingItem>> getTopSellingItems(
+    DateTime start,
+    DateTime end,
+  ) async {
+    final db = await _dbHelper.database;
+    final startEpoch = start.millisecondsSinceEpoch;
+    final endEpoch = end.millisecondsSinceEpoch;
+
+    final result = await db.rawQuery(
+      '''
+      SELECT 
+        p.id,
+        p.name,
+        SUM(si.quantity) as quantity_sold,
+        SUM(si.subtotal) as total_revenue
+      FROM sale_items si
+      JOIN sales s ON si.sale_id = s.id
+      JOIN products p ON si.product_id = p.id
+      WHERE s.sale_date BETWEEN ? AND ?
+      GROUP BY p.id, p.name
+      ORDER BY quantity_sold DESC
+      LIMIT 5
+    ''',
+      [startEpoch, endEpoch],
+    );
+
+    return result.map((row) {
+      return TopSellingItem(
+        productId: row['id'] as String,
+        productName: row['name'] as String,
+        quantitySold: (row['quantity_sold'] as num).toInt(),
+        totalRevenue: (row['total_revenue'] as num).toDouble(),
+      );
+    }).toList();
+  }
+}
