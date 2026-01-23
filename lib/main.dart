@@ -5,8 +5,19 @@ import 'core/router/app_router.dart';
 
 import 'core/theme/providers/theme_provider.dart';
 
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
+import 'package:shared_preferences/shared_preferences.dart';
+import 'core/providers/core_providers.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {
@@ -16,13 +27,13 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(goRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
-    
+
     return MaterialApp.router(
       title: 'Flutter POS',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode, 
+      themeMode: themeMode,
       routerConfig: goRouter,
     );
   }

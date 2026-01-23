@@ -32,21 +32,21 @@ class SettingsScreen extends ConsumerWidget {
                   value: ThemeMode.system,
                   groupValue: themeMode,
                   onChanged: (value) =>
-                      ref.read(themeModeProvider.notifier).state = value!,
+                      ref.read(themeModeProvider.notifier).setTheme(value!),
                 ),
                 RadioListTile<ThemeMode>(
                   title: const Text('Light Mode'),
                   value: ThemeMode.light,
                   groupValue: themeMode,
                   onChanged: (value) =>
-                      ref.read(themeModeProvider.notifier).state = value!,
+                      ref.read(themeModeProvider.notifier).setTheme(value!),
                 ),
                 RadioListTile<ThemeMode>(
                   title: const Text('Dark Mode'),
                   value: ThemeMode.dark,
                   groupValue: themeMode,
                   onChanged: (value) =>
-                      ref.read(themeModeProvider.notifier).state = value!,
+                      ref.read(themeModeProvider.notifier).setTheme(value!),
                 ),
               ],
             ),
