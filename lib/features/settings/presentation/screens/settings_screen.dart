@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/providers/theme_provider.dart';
 import '../../../../core/widgets/app_drawer.dart';
 
@@ -13,6 +14,10 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: () => context.pop(),
+        ),
         title: const Text('Settings'),
       ),
       body: ListView(
@@ -51,8 +56,13 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text('Reset Database',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              title: const Text(
+                'Reset Database',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               subtitle: const Text('Clear all products, customers, and sales.'),
               onTap: () => _showResetDialog(context),
             ),
@@ -87,9 +97,9 @@ class SettingsScreen extends ConsumerWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
@@ -100,7 +110,8 @@ class SettingsScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Reset Database?'),
         content: const Text(
-            'This action cannot be undone. All data will be permanently lost.'),
+          'This action cannot be undone. All data will be permanently lost.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -112,7 +123,9 @@ class SettingsScreen extends ConsumerWidget {
               // TODO: Implement actual database reset
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Database reset functionality pending...')),
+                const SnackBar(
+                  content: Text('Database reset functionality pending...'),
+                ),
               );
             },
             child: const Text('Reset'),

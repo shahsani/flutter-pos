@@ -25,7 +25,7 @@ class AppTheme {
         onSurface: AppColors.textLight,
       ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
-      textTheme: GoogleFonts.poppinsTextTheme().apply(
+      textTheme: GoogleFonts.interTextTheme().apply(
         bodyColor: AppColors.textLight,
         displayColor: AppColors.textLight,
       ),
@@ -39,8 +39,8 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20), // Softer curves
-          side: BorderSide(color: Colors.grey.withOpacity(0.05)),
+          borderRadius: BorderRadius.circular(10), // Softer curves
+          side: BorderSide(color: Colors.grey.withValues(alpha: 0.05)),
         ),
         color: AppColors.surfaceLight,
         margin: const EdgeInsets.only(bottom: 12),
@@ -49,25 +49,30 @@ class AppTheme {
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none, // Cleaner look
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
         hintStyle: TextStyle(color: Colors.grey.shade400),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -77,7 +82,9 @@ class AppTheme {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
       ),
     );
   }
@@ -104,10 +111,9 @@ class AppTheme {
         onSurface: AppColors.textDark,
       ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
-      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).apply(
-        bodyColor: AppColors.textDark,
-        displayColor: AppColors.textDark,
-      ),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.dark().textTheme,
+      ).apply(bodyColor: AppColors.textDark, displayColor: AppColors.textDark),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -118,8 +124,8 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.05)),
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
         ),
         color: AppColors.surfaceDark,
         margin: const EdgeInsets.only(bottom: 12),
@@ -128,24 +134,29 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.surfaceDark,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -155,7 +166,9 @@ class AppTheme {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
-         shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+        ),
       ),
     );
   }

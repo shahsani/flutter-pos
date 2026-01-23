@@ -58,7 +58,7 @@ class DashboardScreen extends ConsumerWidget {
                 'Quick Actions',
                 style: Theme.of(
                   context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               GridView.count(
@@ -202,7 +202,7 @@ class _StatCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -214,7 +214,7 @@ class _StatCard extends StatelessWidget {
               value,
               style: Theme.of(
                 context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -258,7 +258,7 @@ class _DashboardCard extends StatelessWidget {
               title,
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),

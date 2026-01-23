@@ -14,6 +14,7 @@ class AppDrawer extends StatelessWidget {
           DrawerHeader(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.all(Radius.circular(0)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,9 +29,9 @@ class AppDrawer extends StatelessWidget {
                 Text(
                   'Flutter POS',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -87,8 +88,8 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentRoute = GoRouterState.of(context).uri.toString();
     // Simple check: exact match or starts with for some routes (except root)
-    final isSelected = route == '/' 
-        ? currentRoute == '/' 
+    final isSelected = route == '/'
+        ? currentRoute == '/'
         : currentRoute.startsWith(route);
 
     return ListTile(
