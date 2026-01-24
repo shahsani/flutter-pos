@@ -1,6 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as p;
+import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/providers/theme_provider.dart';
 import '../../../../core/widgets/app_drawer.dart';
 
@@ -65,6 +71,21 @@ class SettingsScreen extends ConsumerWidget {
               ),
               subtitle: const Text('Clear all products, customers, and sales.'),
               onTap: () => _showResetDialog(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.backup, color: Colors.blue),
+              title: const Text(
+                'Backup Database',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: const Text('Save a copy of your data to storage.'),
+              onTap: () => _backupDatabase(context),
             ),
           ),
           const SizedBox(height: 24),
@@ -133,5 +154,78 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _backupDatabase(BuildContext context) async {
+    try {
+      final dbFolder = await getDatabasesPath();
+      final dbPath = p.join(dbFolder, 'pos_app.db');
+      final dbFile = File(dbPath);
+
+      if (await dbFile.exists()) {
+        final now = DateTime.now();
+        final formattedDate = DateFormat('yyyyMMMMdd_HHmmss').format(now);
+        final fileName = 'pos_backup_$formattedDate.db';
+
+        // 1. Prepare temp file for sharing
+        final tempDir = await getTemporaryDirectory();
+        final backupPath = p.join(tempDir.path, fileName);
+        await dbFile.copy(backupPath);
+
+        // 2. Try to save directly to persistent storage for convenience
+        String? directSaveLocation;
+        try {
+          if (Platform.isAndroid) {
+            // Try saving to public Downloads folder (may require permissions on some versions)
+            final downloadDir = Directory('/storage/emulated/0/Download');
+            if (await downloadDir.exists()) {
+              final downloadPath = p.join(downloadDir.path, fileName);
+              await dbFile.copy(downloadPath);
+              directSaveLocation = 'Downloads folder';
+            }
+          } else if (Platform.isIOS) {
+            // Save to Documents (accessible via Files app due to Info.plist changes)
+            final documentsDir = await getApplicationDocumentsDirectory();
+            final documentsPath = p.join(documentsDir.path, fileName);
+            await dbFile.copy(documentsPath);
+            directSaveLocation = 'Documents folder';
+          }
+        } catch (e) {
+          // Ignore errors for direct save, fallback to Share
+          debugPrint('Direct save failed: $e');
+        }
+
+        if (context.mounted && directSaveLocation != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Backup saved to $directSaveLocation'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+
+        // 3. Open Share Sheet (Universal backup method)
+        if (context.mounted) {
+          final xFile = XFile(backupPath);
+          await Share.shareXFiles(
+            [xFile],
+            text: 'POS Database Backup $formattedDate',
+            subject: 'POS Database Backup',
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Database file not found!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Backup failed: $e')));
+      }
+    }
   }
 }
