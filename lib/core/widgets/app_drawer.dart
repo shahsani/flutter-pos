@@ -8,6 +8,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -102,6 +103,7 @@ class _DrawerItem extends StatelessWidget {
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           color: isSelected ? Theme.of(context).colorScheme.primary : null,
+          fontSize: Theme.of(context).textTheme.titleSmall?.fontSize,
         ),
       ),
       selected: isSelected,
