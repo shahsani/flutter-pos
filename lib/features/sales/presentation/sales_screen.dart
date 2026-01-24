@@ -22,7 +22,7 @@ class SalesScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/'),
         ),
-        title: const Text('Sales Register'),
+        title: const Text('New Sale'),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -41,9 +41,12 @@ class SalesScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: TextField(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Search products...',
                       prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onChanged: (value) {
                       // TODO: Implement local filtering
@@ -84,7 +87,7 @@ class ProductGrid extends ConsumerWidget {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 200,
+        maxCrossAxisExtent: 150,
         childAspectRatio: 0.8,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
@@ -106,7 +109,7 @@ class ProductGrid extends ConsumerWidget {
                     color: Colors.grey.shade200,
                     child: const Icon(
                       Icons.inventory_2,
-                      size: 48,
+                      size: 24,
                       color: Colors.grey,
                     ),
                   ),
@@ -120,7 +123,12 @@ class ProductGrid extends ConsumerWidget {
                         product.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.fontSize,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -128,6 +136,9 @@ class ProductGrid extends ConsumerWidget {
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
+                          fontSize: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.fontSize,
                         ),
                       ),
                     ],

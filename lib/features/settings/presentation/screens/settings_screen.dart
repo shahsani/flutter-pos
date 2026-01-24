@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:test_pos/core/database/database_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -86,6 +88,21 @@ class SettingsScreen extends ConsumerWidget {
               ),
               subtitle: const Text('Save a copy of your data to storage.'),
               onTap: () => _backupDatabase(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.restore, color: Colors.orange),
+              title: const Text(
+                'Restore Database',
+                style: TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: const Text('Restore data from a backup file.'),
+              onTap: () => _restoreDatabase(context),
             ),
           ),
           const SizedBox(height: 24),
@@ -225,6 +242,68 @@ class SettingsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Backup failed: $e')));
+      }
+    }
+  }
+
+  Future<void> _restoreDatabase(BuildContext context) async {
+    try {
+      // 1. Pick file
+      final result = await FilePicker.platform.pickFiles();
+      if (result != null && result.files.single.path != null) {
+        final sourcePath = result.files.single.path!;
+        final sourceFile = File(sourcePath);
+
+        // 2. Confirm Dialog
+        if (!context.mounted) return;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Restore Database?'),
+            content: const Text(
+              'Warning: This will overwrite all current data with the selected backup. This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Restore'),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed == true) {
+          // 3. Perform Restore
+          // Close existing DB connection
+          await DatabaseHelper.instance.close();
+
+          // Copy file
+          final dbFolder = await getDatabasesPath();
+          final dbPath = p.join(dbFolder, 'pos_app.db');
+          await sourceFile.copy(dbPath);
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Database restored successfully. Please restart the app.',
+                ),
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
       }
     }
   }

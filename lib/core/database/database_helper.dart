@@ -20,8 +20,8 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
 
     return await openDatabase(
-      path, 
-      version: 1, 
+      path,
+      version: 1,
       onCreate: _createDB,
       onConfigure: _onConfigure,
     );
@@ -50,7 +50,7 @@ class DatabaseHelper {
         updated_at $intType
       )
     ''');
-    
+
     // Categories
     await db.execute('''
       CREATE TABLE categories (
@@ -144,7 +144,10 @@ class DatabaseHelper {
   }
 
   Future<void> close() async {
-    final db = await instance.database;
-    db.close();
+    final db = _database;
+    if (db != null) {
+      await db.close();
+      _database = null;
+    }
   }
 }

@@ -13,42 +13,105 @@ class CartView extends ConsumerWidget {
     return Column(
       children: [
         Expanded(
-          child: cartItems.isEmpty
-              ? const Center(child: Text('Cart is empty'))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: cartItems.length,
-                  separatorBuilder: (_, __) => const Divider(),
-                  itemBuilder: (context, index) {
-                    final item = cartItems[index];
-                    return ListTile(
-                      dense: true,
-                      title: Text(item.product.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(
-                          '${item.quantity} x \$${item.unitPrice.toStringAsFixed(2)}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
+          child: Container(
+            color: Theme.of(context).colorScheme.surface,
+            child: cartItems.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 48,
+                          color: Theme.of(context).disabledColor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Cart is empty',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(context).disabledColor,
+                              ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    itemCount: cartItems.length,
+                    separatorBuilder: (_, __) => const Divider(height: 24),
+                    itemBuilder: (context, index) {
+                      final item = cartItems[index];
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('\$${item.subtotal.toStringAsFixed(2)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold)),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline,
-                                color: Colors.red),
-                            onPressed: () {
-                              ref
-                                  .read(cartProvider.notifier)
-                                  .removeProduct(item.product.id);
-                            },
-                          )
+                          // Quantity and Details
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.product.name,
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${item.quantity} x \$${item.unitPrice.toStringAsFixed(2)}',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color
+                                            ?.withOpacity(0.7),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Total and Delete
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '\$${item.subtotal.toStringAsFixed(2)}',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              InkWell(
+                                onTap: () {
+                                  ref
+                                      .read(cartProvider.notifier)
+                                      .removeProduct(item.product.id);
+                                },
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
-                      ),
-                      onTap: () {
-                        // TODO: Adjust quantity dialog
-                      },
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+          ),
         ),
         Container(
           padding: const EdgeInsets.all(16),
@@ -64,15 +127,24 @@ class CartView extends ConsumerWidget {
           ),
           child: Column(
             children: [
-               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Total',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('\$${total.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Total',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  Text(
+                    '\$${total.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -84,8 +156,16 @@ class CartView extends ConsumerWidget {
                       : () => _showPaymentDialog(context, ref, total),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 20),
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('CHARGE'),
+                  child: Text(
+                    'SAVE',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -120,7 +200,10 @@ class CartView extends ConsumerWidget {
   }
 
   void _processPayment(
-      BuildContext context, WidgetRef ref, String method) async {
+    BuildContext context,
+    WidgetRef ref,
+    String method,
+  ) async {
     Navigator.pop(context); // Close dialog
     try {
       await ref.read(cartProvider.notifier).checkout(method);
@@ -131,9 +214,9 @@ class CartView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
