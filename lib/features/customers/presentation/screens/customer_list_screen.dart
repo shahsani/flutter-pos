@@ -14,6 +14,10 @@ class CustomerListScreen extends ConsumerWidget {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
+        ),
         title: const Text('Customers'),
       ),
       floatingActionButton: FloatingActionButton(
@@ -23,7 +27,9 @@ class CustomerListScreen extends ConsumerWidget {
       body: customersAsync.when(
         data: (customers) {
           if (customers.isEmpty) {
-            return const Center(child: Text('No customers found', style: TextStyle(fontSize: 16)));
+            return const Center(
+              child: Text('No customers found', style: TextStyle(fontSize: 16)),
+            );
           }
           return ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -36,8 +42,13 @@ class CustomerListScreen extends ConsumerWidget {
                   leading: CircleAvatar(
                     child: Text(customer.name[0].toUpperCase()),
                   ),
-                  title: Text(customer.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(customer.phone ?? customer.email ?? 'No contact info'),
+                  title: Text(
+                    customer.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    customer.phone ?? customer.email ?? 'No contact info',
+                  ),
                   onTap: () => context.push('/customers/edit/${customer.id}'),
                 ),
               );

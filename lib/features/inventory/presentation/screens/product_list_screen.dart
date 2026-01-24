@@ -14,6 +14,10 @@ class ProductListScreen extends ConsumerWidget {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
+        ),
         title: const Text('Inventory'),
         actions: [
           IconButton(
@@ -41,7 +45,11 @@ class ProductListScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
+                  const Icon(
+                    Icons.inventory_2_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No products found',
@@ -65,7 +73,9 @@ class ProductListScreen extends ConsumerWidget {
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
                     child: Text(
                       product.name.substring(0, 1).toUpperCase(),
                       style: TextStyle(
@@ -73,8 +83,13 @@ class ProductListScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('SKU: ${product.sku ?? "N/A"} • Stock: ${product.stockQuantity}'),
+                  title: Text(
+                    product.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'SKU: ${product.sku ?? "N/A"} • Stock: ${product.stockQuantity}',
+                  ),
                   trailing: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,

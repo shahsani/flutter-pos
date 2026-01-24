@@ -21,8 +21,8 @@ class SettingsScreen extends ConsumerWidget {
       drawer: const AppDrawer(),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
         ),
         title: const Text('Settings'),
       ),

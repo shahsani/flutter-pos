@@ -22,7 +22,13 @@ class SalesHistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       drawer: const AppDrawer(),
-      appBar: AppBar(title: const Text('Sales History')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Sales History'),
+      ),
       body: salesAsync.when(
         data: (sales) {
           if (sales.isEmpty) {
