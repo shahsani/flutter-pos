@@ -11,10 +11,16 @@ import '../../features/customers/presentation/screens/add_edit_customer_screen.d
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 
+import '../../features/splash/presentation/screens/splash_screen.dart';
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/splash',
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/',
         builder: (context, state) => const DashboardScreen(),
@@ -66,7 +72,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'edit/:id',
                 builder: (context, state) {
-                   final id = state.pathParameters['id'];
+                  final id = state.pathParameters['id'];
                   return AddEditCustomerScreen(customerId: id);
                 },
               ),
