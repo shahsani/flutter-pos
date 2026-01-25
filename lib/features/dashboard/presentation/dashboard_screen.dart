@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
+
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -32,6 +34,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
+  // Helper method to determine device type and layout parameters
+  _LayoutParams _getLayoutParams(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final orientation = MediaQuery.of(context).orientation;
+    final width = size.width;
+
+    // Determine if tablet based on shortest side (works for both orientations)
+    final shortestSide = size.shortestSide;
+    final isTablet = shortestSide >= 600;
+    final isLandscape = orientation == Orientation.landscape;
+
+    return _LayoutParams(
+      isTablet: isTablet,
+      isLandscape: isLandscape,
+      screenWidth: width,
+      // Quick actions grid columns
+      quickActionsColumns: isTablet
+          ? (isLandscape ? 6 : 4)
+          : (isLandscape ? 4 : 3),
+      // Chart height adapts to orientation
+      chartHeight: isLandscape ? 180.0 : 200.0,
+      // Padding adapts to screen size
+      horizontalPadding: isTablet ? 24.0 : 16.0,
+      // Stats cards per row
+      statsCardsPerRow: isTablet || isLandscape ? 4 : 2,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get today's date range
@@ -59,71 +89,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       body: GestureDetector(
         onTap: _closeFab,
-        behavior: HitTestBehavior.translucent, // Catch taps on empty space
+        behavior: HitTestBehavior.translucent,
         child: RefreshIndicator(
           onRefresh: () async {
-            // Invalidate the provider to force a refresh
             ref.invalidate(salesReportProvider);
-            // Wait a bit for the new data to load
             await Future.delayed(const Duration(milliseconds: 500));
           },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                todayStatsAsync.when(
-                  data: (stats) => _buildQuickStats(context, stats),
-                  loading: () => _buildQuickStatsLoading(context),
-                  error: (e, s) => _buildQuickStatsError(context),
-                ),
-                const SizedBox(height: 24),
-                // Wrap in GestureDetector to swallow taps on interactive elements if needed,
-                // but usually the specific widget's onTap wins.
-                // However, the parent GestureDetector might still receive it if child acts transparently.
-                // In this case, we just want "outside FAB" to close FAB.
-                // Tapping a card *performs an action*, which might be fine to also close FAB or not.
-                // Since navigating away closes the screen, it doesn't matter much.
-                Text(
-                  'Quick Actions',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 1.1,
-                  children: [
-                    _DashboardCard(
-                      title: 'Inventory',
-                      icon: FontAwesomeIcons.boxesStacked,
-                      color: Colors.orange,
-                      onTap: () => context.go('/inventory'),
-                    ),
-                    _DashboardCard(
-                      title: 'Customers',
-                      icon: FontAwesomeIcons.users,
-                      color: Colors.teal,
-                      onTap: () => context.go('/customers'),
-                    ),
-                    _DashboardCard(
-                      title: 'Reports',
-                      icon: FontAwesomeIcons.chartPie,
-                      color: Colors.purple,
-                      onTap: () => context.go('/reports'),
-                    ),
-                  ],
-                ),
-                // Add extra padding at bottom to ensure scrolling doesn't hide content behind FAB
-                const SizedBox(height: 100),
-              ],
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final layoutParams = _getLayoutParams(context);
+
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(layoutParams.horizontalPadding),
+                child: layoutParams.isLandscape
+                    ? _buildLandscapeLayout(
+                        context,
+                        todayStatsAsync,
+                        layoutParams,
+                      )
+                    : _buildPortraitLayout(
+                        context,
+                        todayStatsAsync,
+                        layoutParams,
+                      ),
+              );
+            },
           ),
         ),
       ),
@@ -156,8 +147,179 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickStats(BuildContext context, SalesReport stats) {
+  /// Portrait layout - vertical stacking
+  Widget _buildPortraitLayout(
+    BuildContext context,
+    AsyncValue<SalesReport> todayStatsAsync,
+    _LayoutParams layoutParams,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Stats section
+        todayStatsAsync.when(
+          data: (stats) => _buildQuickStats(context, stats, layoutParams),
+          loading: () => _buildQuickStatsLoading(context, layoutParams),
+          error: (e, s) => _buildQuickStatsError(context, layoutParams),
+        ),
+        const SizedBox(height: 24),
+
+        // Quick Actions section
+        Text(
+          'Quick Actions',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        _buildQuickActionsGrid(context, layoutParams),
+
+        const SizedBox(height: 32),
+
+        // Chart section
+        Text(
+          'Sales by Payment Method',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        todayStatsAsync.when(
+          data: (stats) => _buildSalesPieChart(context, stats, layoutParams),
+          loading: () => SizedBox(
+            height: layoutParams.chartHeight,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+
+        const SizedBox(height: 100),
+      ],
+    );
+  }
+
+  /// Landscape layout - side by side arrangement for better space utilization
+  Widget _buildLandscapeLayout(
+    BuildContext context,
+    AsyncValue<SalesReport> todayStatsAsync,
+    _LayoutParams layoutParams,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Stats section - full width at top
+        todayStatsAsync.when(
+          data: (stats) => _buildQuickStats(context, stats, layoutParams),
+          loading: () => _buildQuickStatsLoading(context, layoutParams),
+          error: (e, s) => _buildQuickStatsError(context, layoutParams),
+        ),
+        const SizedBox(height: 24),
+
+        // Side-by-side: Quick Actions and Chart
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Quick Actions (left side)
+            Expanded(
+              flex: layoutParams.isTablet ? 3 : 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Quick Actions',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildQuickActionsGrid(context, layoutParams),
+                ],
+              ),
+            ),
+
+            SizedBox(width: layoutParams.horizontalPadding),
+
+            // Chart (right side)
+            Expanded(
+              flex: layoutParams.isTablet ? 2 : 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sales by Payment Method',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  todayStatsAsync.when(
+                    data: (stats) =>
+                        _buildSalesPieChart(context, stats, layoutParams),
+                    loading: () => SizedBox(
+                      height: layoutParams.chartHeight,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 100),
+      ],
+    );
+  }
+
+  /// Build Quick Actions Grid with responsive columns
+  Widget _buildQuickActionsGrid(
+    BuildContext context,
+    _LayoutParams layoutParams,
+  ) {
+    // In landscape mode within Row, use fewer columns
+    final columns = layoutParams.isLandscape
+        ? 3
+        : layoutParams.quickActionsColumns;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: columns,
+      crossAxisSpacing: layoutParams.isTablet ? 12 : 8,
+      mainAxisSpacing: layoutParams.isTablet ? 12 : 8,
+      childAspectRatio: layoutParams.isTablet ? 1.2 : 1.1,
+      children: [
+        _DashboardCard(
+          title: 'Inventory',
+          icon: FontAwesomeIcons.boxesStacked,
+          color: Colors.orange,
+          onTap: () => context.go('/inventory'),
+        ),
+        _DashboardCard(
+          title: 'Customers',
+          icon: FontAwesomeIcons.users,
+          color: Colors.teal,
+          onTap: () => context.go('/customers'),
+        ),
+        _DashboardCard(
+          title: 'Reports',
+          icon: FontAwesomeIcons.chartPie,
+          color: Colors.purple,
+          onTap: () => context.go('/reports'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickStats(
+    BuildContext context,
+    SalesReport stats,
+    _LayoutParams layoutParams,
+  ) {
     final currency = NumberFormat.currency(symbol: '\$');
+    final spacing = layoutParams.isTablet ? 20.0 : 16.0;
+
     return Row(
       children: [
         Expanded(
@@ -166,22 +328,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             value: currency.format(stats.totalSales),
             icon: FontAwesomeIcons.dollarSign,
             color: Colors.green,
+            isTablet: layoutParams.isTablet,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: spacing),
         Expanded(
           child: _StatCard(
             label: 'Transactions',
             value: stats.totalTransactions.toString(),
             icon: FontAwesomeIcons.receipt,
             color: Colors.indigo,
+            isTablet: layoutParams.isTablet,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildQuickStatsLoading(BuildContext context) {
+  Widget _buildQuickStatsLoading(
+    BuildContext context,
+    _LayoutParams layoutParams,
+  ) {
+    final spacing = layoutParams.isTablet ? 20.0 : 16.0;
+
     return Row(
       children: [
         Expanded(
@@ -190,22 +359,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             value: '...',
             icon: FontAwesomeIcons.dollarSign,
             color: Colors.green,
+            isTablet: layoutParams.isTablet,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: spacing),
         Expanded(
           child: _StatCard(
             label: 'Transactions',
             value: '...',
             icon: FontAwesomeIcons.receipt,
             color: Colors.indigo,
+            isTablet: layoutParams.isTablet,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildQuickStatsError(BuildContext context) {
+  Widget _buildQuickStatsError(
+    BuildContext context,
+    _LayoutParams layoutParams,
+  ) {
+    final spacing = layoutParams.isTablet ? 20.0 : 16.0;
+
     return Row(
       children: [
         Expanded(
@@ -214,16 +390,234 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             value: '\$0.00',
             icon: FontAwesomeIcons.dollarSign,
             color: Colors.green,
+            isTablet: layoutParams.isTablet,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: spacing),
         Expanded(
           child: _StatCard(
             label: 'Transactions',
             value: '0',
             icon: FontAwesomeIcons.receipt,
             color: Colors.indigo,
+            isTablet: layoutParams.isTablet,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSalesPieChart(
+    BuildContext context,
+    SalesReport stats,
+    _LayoutParams layoutParams,
+  ) {
+    if (stats.totalSales == 0) {
+      return Container(
+        height: layoutParams.chartHeight,
+        alignment: Alignment.center,
+        child: Text(
+          'No sales today',
+          style: TextStyle(color: Theme.of(context).disabledColor),
+        ),
+      );
+    }
+
+    final double cashPercentage = stats.totalSales > 0
+        ? (stats.totalCashSales / stats.totalSales) * 100
+        : 0;
+    final double cardPercentage = stats.totalSales > 0
+        ? (stats.totalCardSales / stats.totalSales) * 100
+        : 0;
+
+    // In landscape mode, use a more compact layout
+    final isCompactChart = layoutParams.isLandscape && !layoutParams.isTablet;
+    final chartRadius = isCompactChart ? 40.0 : 50.0;
+    final centerRadius = isCompactChart ? 30.0 : 40.0;
+
+    return SizedBox(
+      height: layoutParams.chartHeight,
+      child: layoutParams.isLandscape
+          ? Column(
+              // Vertical layout for landscape - chart on top, legend below
+              children: [
+                Expanded(
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 2,
+                      centerSpaceRadius: centerRadius,
+                      sections: [
+                        if (stats.totalCashSales > 0)
+                          PieChartSectionData(
+                            color: Colors.green,
+                            value: stats.totalCashSales,
+                            title: '${cashPercentage.toStringAsFixed(1)}%',
+                            radius: chartRadius,
+                            titleStyle: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        if (stats.totalCardSales > 0)
+                          PieChartSectionData(
+                            color: Colors.blue,
+                            value: stats.totalCardSales,
+                            title: '${cardPercentage.toStringAsFixed(1)}%',
+                            radius: chartRadius,
+                            titleStyle: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _ChartLegend(
+                      color: Colors.green,
+                      label: 'Cash',
+                      value: NumberFormat.currency(
+                        symbol: '\$',
+                      ).format(stats.totalCashSales),
+                      compact: true,
+                    ),
+                    const SizedBox(width: 16),
+                    _ChartLegend(
+                      color: Colors.blue,
+                      label: 'Card',
+                      value: NumberFormat.currency(
+                        symbol: '\$',
+                      ).format(stats.totalCardSales),
+                      compact: true,
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 40,
+                      sections: [
+                        if (stats.totalCashSales > 0)
+                          PieChartSectionData(
+                            color: Colors.green,
+                            value: stats.totalCashSales,
+                            title: '${cashPercentage.toStringAsFixed(1)}%',
+                            radius: 50,
+                            titleStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        if (stats.totalCardSales > 0)
+                          PieChartSectionData(
+                            color: Colors.blue,
+                            value: stats.totalCardSales,
+                            title: '${cardPercentage.toStringAsFixed(1)}%',
+                            radius: 50,
+                            titleStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ChartLegend(
+                      color: Colors.green,
+                      label: 'Cash',
+                      value: NumberFormat.currency(
+                        symbol: '\$',
+                      ).format(stats.totalCashSales),
+                    ),
+                    const SizedBox(height: 12),
+                    _ChartLegend(
+                      color: Colors.blue,
+                      label: 'Card',
+                      value: NumberFormat.currency(
+                        symbol: '\$',
+                      ).format(stats.totalCardSales),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+    );
+  }
+} // End of _DashboardScreenState
+
+class _ChartLegend extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String value;
+  final bool compact;
+
+  const _ChartLegend({
+    required this.color,
+    required this.label,
+    required this.value,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (compact) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$label: $value',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text(value, style: Theme.of(context).textTheme.bodySmall),
+          ],
         ),
       ],
     );
@@ -235,19 +629,31 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final bool isTablet;
 
   const _StatCard({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
+    this.isTablet = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final padding = isTablet ? 20.0 : 16.0;
+    final iconSize = isTablet ? 20.0 : 16.0;
+    final valueStyle = isTablet
+        ? Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
+        : Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold);
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -260,16 +666,11 @@ class _StatCard extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                Icon(icon, size: 16, color: color),
+                Icon(icon, size: iconSize, color: color),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            SizedBox(height: isTablet ? 12 : 8),
+            Text(value, style: valueStyle),
           ],
         ),
       ),
@@ -319,4 +720,25 @@ class _DashboardCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Layout parameters for responsive UI
+class _LayoutParams {
+  final bool isTablet;
+  final bool isLandscape;
+  final double screenWidth;
+  final int quickActionsColumns;
+  final double chartHeight;
+  final double horizontalPadding;
+  final int statsCardsPerRow;
+
+  const _LayoutParams({
+    required this.isTablet,
+    required this.isLandscape,
+    required this.screenWidth,
+    required this.quickActionsColumns,
+    required this.chartHeight,
+    required this.horizontalPadding,
+    required this.statsCardsPerRow,
+  });
 }
