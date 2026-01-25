@@ -8,11 +8,18 @@ import 'controllers/cart_controller.dart';
 import 'widgets/cart_view.dart';
 import '../../../../core/widgets/app_drawer.dart';
 
-class SalesScreen extends ConsumerWidget {
+class SalesScreen extends ConsumerStatefulWidget {
   const SalesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SalesScreen> createState() => _SalesScreenState();
+}
+
+class _SalesScreenState extends ConsumerState<SalesScreen> {
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
     final productsAsync = ref.watch(productsProvider);
 
     return Scaffold(
@@ -49,13 +56,22 @@ class SalesScreen extends ConsumerWidget {
                       ),
                     ),
                     onChanged: (value) {
-                      // TODO: Implement local filtering
+                      setState(() {
+                        _searchQuery = value;
+                      });
                     },
                   ),
                 ),
                 Expanded(
                   child: productsAsync.when(
-                    data: (products) => ProductGrid(products: products),
+                    data: (products) {
+                      final filteredProducts = products.where((product) {
+                        return product.name.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        );
+                      }).toList();
+                      return ProductGrid(products: filteredProducts);
+                    },
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (e, s) => Center(child: Text('Error: $e')),
