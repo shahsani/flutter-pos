@@ -15,13 +15,11 @@ final salesReportProvider = FutureProvider.family<SalesReport, ReportDateRange>(
   },
 );
 
-final topSellingItemsProvider = FutureProvider<List<TopSellingItem>>((ref) {
-  final repository = ref.watch(reportRepositoryProvider);
-  // Default to all time for now, or last 30 days
-  final end = DateTime.now();
-  final start = end.subtract(const Duration(days: 30));
-  return repository.getTopSellingItems(start, end);
-});
+final topSellingItemsProvider =
+    FutureProvider.family<List<TopSellingItem>, ReportDateRange>((ref, range) {
+      final repository = ref.watch(reportRepositoryProvider);
+      return repository.getTopSellingItems(range.start, range.end);
+    });
 
 // Helper for date ranges
 class ReportDateRange extends Equatable {

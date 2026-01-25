@@ -51,10 +51,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final reportAsync = ref.watch(salesReportProvider(_selectedRange));
-    final topItemsAsync = ref.watch(topSellingItemsProvider);
+    final topItemsAsync = ref.watch(topSellingItemsProvider(_selectedRange));
 
     return Scaffold(
-      drawer: const AppDrawer(),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
