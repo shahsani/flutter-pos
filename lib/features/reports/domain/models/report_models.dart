@@ -3,12 +3,16 @@ class SalesReport {
   final int totalTransactions;
   final double averageTransactionValue;
   final int totalItemsSold;
+  final double totalCashSales;
+  final double totalCardSales;
 
   const SalesReport({
     required this.totalSales,
     required this.totalTransactions,
     required this.averageTransactionValue,
     required this.totalItemsSold,
+    required this.totalCashSales,
+    required this.totalCardSales,
   });
 }
 

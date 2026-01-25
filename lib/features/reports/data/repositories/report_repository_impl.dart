@@ -46,6 +46,32 @@ class ReportRepositoryImpl implements ReportRepository {
     final totalItemsSold =
         (itemsResult.first['total_items'] as num?)?.toInt() ?? 0;
 
+    // Sales by Payment Method
+    final paymentResult = await db.rawQuery(
+      '''
+      SELECT 
+        payment_method,
+        COALESCE(SUM(total_amount), 0) as total
+      FROM sales
+      WHERE sale_date BETWEEN ? AND ?
+      GROUP BY payment_method
+    ''',
+      [startEpoch, endEpoch],
+    );
+
+    double totalCash = 0;
+    double totalCard = 0;
+
+    for (final row in paymentResult) {
+      final method = row['payment_method'] as String?;
+      final amount = (row['total'] as num?)?.toDouble() ?? 0.0;
+      if (method == 'Cash') {
+        totalCash = amount;
+      } else if (method == 'Card') {
+        totalCard = amount;
+      }
+    }
+
     return SalesReport(
       totalSales: totalSales,
       totalTransactions: totalTransactions,
@@ -53,6 +79,8 @@ class ReportRepositoryImpl implements ReportRepository {
           ? 0
           : totalSales / totalTransactions,
       totalItemsSold: totalItemsSold,
+      totalCashSales: totalCash,
+      totalCardSales: totalCard,
     );
   }
 
