@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/inventory/presentation/screens/product_list_screen.dart';
 import '../../features/inventory/presentation/screens/add_edit_product_screen.dart';
+import '../../features/inventory/presentation/screens/categories_screen.dart';
 import '../../features/sales/presentation/sales_screen.dart';
 import '../../features/sales/presentation/screens/sales_history_screen.dart';
 import '../../features/sales/presentation/screens/sale_details_screen.dart';
@@ -60,6 +61,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: 'categories',
+            builder: (context, state) => const CategoriesScreen(),
           ),
           GoRoute(
             path: 'customers',

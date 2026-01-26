@@ -53,6 +53,11 @@ class AppDrawer extends StatelessWidget {
             route: '/inventory',
           ),
           _DrawerItem(
+            icon: FontAwesomeIcons.layerGroup,
+            title: 'Categories',
+            route: '/categories',
+          ),
+          _DrawerItem(
             icon: FontAwesomeIcons.users,
             title: 'Customers',
             route: '/customers',

@@ -142,6 +142,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             color: Colors.indigo,
             onPressed: () => context.go('/sales/history'),
           ),
+          ExpandableFabAction(
+            icon: FontAwesomeIcons.layerGroup,
+            label: 'Categories',
+            color: Colors.deepPurple,
+            onPressed: () => context.go('/categories'),
+          ),
         ],
       ),
     );
@@ -303,10 +309,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           onTap: () => context.go('/customers'),
         ),
         _DashboardCard(
-          title: 'Reports',
-          icon: FontAwesomeIcons.chartPie,
-          color: Colors.purple,
-          onTap: () => context.go('/reports'),
+          title: 'Categories',
+          icon: FontAwesomeIcons.layerGroup,
+          color: Colors.blueAccent,
+          onTap: () => context.go('/categories'),
         ),
       ],
     );

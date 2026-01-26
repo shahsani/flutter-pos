@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/product.dart';
 import '../../domain/repositories/product_repository.dart';
+import '../../domain/models/category_model.dart'; // Unused if not used directly, but usually good.
+import '../controllers/category_providers.dart';
 
 class AddEditProductScreen extends ConsumerStatefulWidget {
   final String? productId;
@@ -11,7 +13,8 @@ class AddEditProductScreen extends ConsumerStatefulWidget {
   const AddEditProductScreen({super.key, this.productId});
 
   @override
-  ConsumerState<AddEditProductScreen> createState() => _AddEditProductScreenState();
+  ConsumerState<AddEditProductScreen> createState() =>
+      _AddEditProductScreenState();
 }
 
 class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
@@ -24,6 +27,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   final _stockController = TextEditingController();
   final _minStockController = TextEditingController();
   final _descriptionController = TextEditingController();
+
+  String? _selectedCategoryId;
 
   bool _isLoading = false;
 
@@ -38,7 +43,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   Future<void> _loadProduct() async {
     setState(() => _isLoading = true);
     try {
-      final product = await ref.read(productRepositoryProvider).getProductById(widget.productId!);
+      final product = await ref
+          .read(productRepositoryProvider)
+          .getProductById(widget.productId!);
       if (product != null) {
         _nameController.text = product.name;
         _skuController.text = product.sku ?? '';
@@ -46,8 +53,10 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         _costPriceController.text = product.costPrice.toString();
         _sellingPriceController.text = product.sellingPrice.toString();
         _stockController.text = product.stockQuantity.toString();
+        _stockController.text = product.stockQuantity.toString();
         _minStockController.text = product.minStockLevel.toString();
         _descriptionController.text = product.description ?? '';
+        _selectedCategoryId = product.categoryId;
       }
     } finally {
       setState(() => _isLoading = false);
@@ -80,10 +89,12 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                   _buildSectionTitle('Basic Information'),
+                  _buildSectionTitle('Basic Information'),
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Product Name *'),
+                    decoration: const InputDecoration(
+                      labelText: 'Product Name *',
+                    ),
                     validator: (value) =>
                         value == null || value.isEmpty ? 'Required' : null,
                   ),
@@ -108,8 +119,50 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+
+                  // Category Dropdown
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final categoriesAsync = ref.watch(categoryListProvider);
+                      return categoriesAsync.when(
+                        data: (categories) {
+                          return DropdownButtonFormField<String>(
+                            value: _selectedCategoryId,
+                            decoration: const InputDecoration(
+                              labelText: 'Category',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem<String>(
+                                value: null,
+                                child: Text('No Category'),
+                              ),
+                              ...categories.map(
+                                (c) => DropdownMenuItem<String>(
+                                  value: c.id,
+                                  child: Text(c.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCategoryId = value;
+                              });
+                            },
+                          );
+                        },
+                        loading: () => const SizedBox(
+                          height: 50,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (err, stack) =>
+                            Text('Error loading categories: $err'),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 24),
-                  
+
                   _buildSectionTitle('Pricing & Inventory'),
                   Row(
                     children: [
@@ -117,7 +170,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                         child: TextFormField(
                           controller: _costPriceController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Cost Price *'),
+                          decoration: const InputDecoration(
+                            labelText: 'Cost Price *',
+                          ),
                           validator: (value) => _validateNumber(value),
                         ),
                       ),
@@ -126,7 +181,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                         child: TextFormField(
                           controller: _sellingPriceController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Selling Price *'),
+                          decoration: const InputDecoration(
+                            labelText: 'Selling Price *',
+                          ),
                           validator: (value) => _validateNumber(value),
                         ),
                       ),
@@ -139,8 +196,11 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                         child: TextFormField(
                           controller: _stockController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Stock Quantity *'),
-                          validator: (value) => _validateNumber(value, isInt: true),
+                          decoration: const InputDecoration(
+                            labelText: 'Stock Quantity *',
+                          ),
+                          validator: (value) =>
+                              _validateNumber(value, isInt: true),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -148,13 +208,15 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                         child: TextFormField(
                           controller: _minStockController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Min Stock Level'),
+                          decoration: const InputDecoration(
+                            labelText: 'Min Stock Level',
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   _buildSectionTitle('Additional Details'),
                   TextFormField(
                     controller: _descriptionController,
@@ -162,12 +224,16 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                     decoration: const InputDecoration(labelText: 'Description'),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
                       onPressed: _saveProduct,
-                      child: Text(widget.productId == null ? 'Create Product' : 'Update Product'),
+                      child: Text(
+                        widget.productId == null
+                            ? 'Create Product'
+                            : 'Update Product',
+                      ),
                     ),
                   ),
                 ],
@@ -182,9 +248,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
@@ -207,13 +273,19 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         id: widget.productId ?? const Uuid().v4(),
         name: _nameController.text,
         sku: _skuController.text.isEmpty ? null : _skuController.text,
-        barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
+        barcode: _barcodeController.text.isEmpty
+            ? null
+            : _barcodeController.text,
+        categoryId: _selectedCategoryId,
         costPrice: double.parse(_costPriceController.text),
         sellingPrice: double.parse(_sellingPriceController.text),
         stockQuantity: int.parse(_stockController.text),
         minStockLevel: int.tryParse(_minStockController.text) ?? 0,
-        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-        createdAt: DateTime.now(), // In edit, we might want to keep original createdAt
+        description: _descriptionController.text.isEmpty
+            ? null
+            : _descriptionController.text,
+        createdAt:
+            DateTime.now(), // In edit, we might want to keep original createdAt
         updatedAt: DateTime.now(),
       );
 
@@ -233,9 +305,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving product: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving product: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
