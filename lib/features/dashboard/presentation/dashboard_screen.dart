@@ -283,38 +283,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context,
     _LayoutParams layoutParams,
   ) {
-    // In landscape mode within Row, use fewer columns
-    final columns = layoutParams.isLandscape
-        ? 3
-        : layoutParams.quickActionsColumns;
+    return SizedBox(
+      height: 100,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        children: [
+          _buildActionItem(
+            context,
+            title: 'Categories',
+            icon: FontAwesomeIcons.layerGroup,
+            color: Colors.blueAccent,
+            onTap: () => context.go('/categories'),
+          ),
+          _buildActionItem(
+            context,
+            title: 'Inventory',
+            icon: FontAwesomeIcons.boxesStacked,
+            color: Colors.orange,
+            onTap: () => context.go('/inventory'),
+          ),
+          _buildActionItem(
+            context,
+            title: 'Customers',
+            icon: FontAwesomeIcons.users,
+            color: Colors.teal,
+            onTap: () => context.go('/customers'),
+          ),
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: columns,
-      crossAxisSpacing: layoutParams.isTablet ? 12 : 8,
-      mainAxisSpacing: layoutParams.isTablet ? 12 : 8,
-      childAspectRatio: layoutParams.isTablet ? 1.2 : 1.1,
-      children: [
-        _DashboardCard(
-          title: 'Inventory',
-          icon: FontAwesomeIcons.boxesStacked,
-          color: Colors.orange,
-          onTap: () => context.go('/inventory'),
-        ),
-        _DashboardCard(
-          title: 'Customers',
-          icon: FontAwesomeIcons.users,
-          color: Colors.teal,
-          onTap: () => context.go('/customers'),
-        ),
-        _DashboardCard(
-          title: 'Categories',
-          icon: FontAwesomeIcons.layerGroup,
-          color: Colors.blueAccent,
-          onTap: () => context.go('/categories'),
-        ),
-      ],
+          _buildActionItem(
+            context,
+            title: 'Sales',
+            icon: FontAwesomeIcons.clockRotateLeft,
+            color: Colors.indigo,
+            onTap: () => context.go('/sales/history'),
+          ),
+          _buildActionItem(
+            context,
+            title: 'Reports',
+            icon: FontAwesomeIcons.chartPie,
+            color: Colors.purple,
+            onTap: () => context.go('/reports'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionItem(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 12),
+      child: _DashboardCard(
+        title: title,
+        icon: icon,
+        color: color,
+        onTap: onTap,
+      ),
     );
   }
 
@@ -707,20 +738,15 @@ class _DashboardCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 16, color: color),
+              child: Icon(icon, size: 12, color: color),
             ),
             const SizedBox(height: 4),
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),
