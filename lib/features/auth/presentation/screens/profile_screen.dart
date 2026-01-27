@@ -51,30 +51,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     setState(() => _isProfileLoading = true);
 
-    await ref
-        .read(authProvider.notifier)
-        .updateProfile(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-        );
+    try {
+      await ref
+          .read(authProvider.notifier)
+          .updateProfile(
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+          );
 
-    if (mounted) {
-      setState(() => _isProfileLoading = false);
-      final authState = ref.read(authProvider);
-      if (authState.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              authState.error.toString().replaceAll('Exception: ', ''),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
+      if (mounted) {
+        setState(() => _isProfileLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
-        context.pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _isProfileLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -84,33 +83,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     setState(() => _isPasswordLoading = true);
 
-    await ref
-        .read(authProvider.notifier)
-        .updatePassword(
-          currentPassword: _currentPasswordController.text,
-          newPassword: _newPasswordController.text.trim(),
-        );
+    try {
+      await ref
+          .read(authProvider.notifier)
+          .updatePassword(
+            currentPassword: _currentPasswordController.text,
+            newPassword: _newPasswordController.text.trim(),
+          );
 
-    if (mounted) {
-      setState(() => _isPasswordLoading = false);
-      final authState = ref.read(authProvider);
-      if (authState.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              authState.error.toString().replaceAll('Exception: ', ''),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
+      if (mounted) {
+        setState(() => _isPasswordLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password changed successfully')),
         );
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
-        context.pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _isPasswordLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -176,18 +174,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   value != null && value.isNotEmpty ? null : 'Enter email',
             ),
             const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _isProfileLoading ? null : _saveProfile,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: _isProfileLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save Changes'),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isProfileLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isProfileLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save Changes'),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => context.go('/'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -227,8 +241,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               obscureText: true,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Enter new password';
-                if (value.length < 6)
+                if (value.length < 6) {
                   return 'Password must be at least 6 characters';
+                }
                 return null;
               },
             ),
@@ -242,26 +257,44 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               ),
               obscureText: true,
               validator: (value) {
-                if (value == null || value.isEmpty)
+                if (value == null || value.isEmpty) {
                   return 'Confirm new password';
-                if (value != _newPasswordController.text)
+                }
+                if (value != _newPasswordController.text) {
                   return 'Passwords do not match';
+                }
                 return null;
               },
             ),
             const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _isPasswordLoading ? null : _changePassword,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: _isPasswordLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Change Password'),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isPasswordLoading ? null : _changePassword,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isPasswordLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Change Password'),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => context.go('/'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

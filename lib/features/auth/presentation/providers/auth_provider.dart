@@ -5,6 +5,7 @@ import '../../../../core/database/database_helper.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/models/user_model.dart';
 import 'package:uuid/uuid.dart';
+import '../../utils/password_hasher.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(DatabaseHelper.instance);
@@ -80,16 +81,11 @@ class AuthNotifier extends AsyncNotifier<User?> {
     state = const AsyncValue.data(null);
   }
 
-  Future<void> updateProfile({
-    String? name,
-    String? email,
-    String? password,
-  }) async {
+  Future<void> updateProfile({String? name, String? email}) async {
     final user = state.value;
     if (user == null) return;
 
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       final repo = ref.read(authRepositoryProvider);
 
       if (email != null && email != user.email) {
@@ -101,13 +97,16 @@ class AuthNotifier extends AsyncNotifier<User?> {
       final updatedUser = user.copyWith(
         name: name,
         email: email,
-        password: password,
         updatedAt: DateTime.now(),
       );
 
       await repo.updateUser(updatedUser);
-      return updatedUser;
-    });
+      state = AsyncValue.data(updatedUser);
+    } catch (error) {
+      // Don't change state on error - keep user logged in
+      // The UI will need to handle rethrown errors
+      rethrow;
+    }
   }
 
   Future<void> updatePassword({
@@ -117,21 +116,26 @@ class AuthNotifier extends AsyncNotifier<User?> {
     final user = state.value;
     if (user == null) return;
 
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      if (user.password != currentPassword) {
+    try {
+      // Verify current password using hash comparison
+      if (!PasswordHasher.verifyPassword(currentPassword, user.password)) {
         throw Exception('Current password is incorrect');
       }
 
       final repo = ref.read(authRepositoryProvider);
+      //Hash the new password before storing
       final updatedUser = user.copyWith(
-        password: newPassword,
+        password: PasswordHasher.hashPassword(newPassword),
         updatedAt: DateTime.now(),
       );
 
       await repo.updateUser(updatedUser);
-      return updatedUser;
-    });
+      state = AsyncValue.data(updatedUser);
+    } catch (error) {
+      // Don't change state on error - keep user logged in
+      // The UI will need to handle rethrown errors
+      rethrow;
+    }
   }
 
   Future<void> _saveSession(String userId) async {

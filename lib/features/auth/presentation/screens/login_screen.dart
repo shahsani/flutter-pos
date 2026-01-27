@@ -24,7 +24,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      await ref
+      var result = await ref
           .read(authProvider.notifier)
           .login(_emailController.text.trim(), _passwordController.text.trim());
       // Navigation is handled by router redirect
@@ -48,7 +48,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Icon(Icons.point_of_sale, size: 80, color: Colors.blue),
                 const SizedBox(height: 32),
                 const Text(
-                  'Welcome Back',
+                  'Flutter POS',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),

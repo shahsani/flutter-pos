@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../domain/models/user_model.dart';
+import '../../utils/password_hasher.dart';
 
 class AuthRepository {
   final DatabaseHelper _databaseHelper;
@@ -9,24 +10,32 @@ class AuthRepository {
 
   Future<User> createUser(User user) async {
     final db = await _databaseHelper.database;
+    // Hash the password before storing
+    final hashedUser = user.copyWith(
+      password: PasswordHasher.hashPassword(user.password),
+    );
     await db.insert(
       'users',
-      user.toMap(),
+      hashedUser.toMap(),
       conflictAlgorithm: ConflictAlgorithm.fail, // Email must be unique
     );
-    return user;
+    return hashedUser;
   }
 
   Future<User?> login(String email, String password) async {
     final db = await _databaseHelper.database;
     final maps = await db.query(
       'users',
-      where: 'email = ? AND password = ?',
-      whereArgs: [email, password],
+      where: 'email = ?',
+      whereArgs: [email],
     );
 
     if (maps.isNotEmpty) {
-      return User.fromMap(maps.first);
+      final user = User.fromMap(maps.first);
+      // Verify password hash
+      if (PasswordHasher.verifyPassword(password, user.password)) {
+        return user;
+      }
     }
     return null;
   }
