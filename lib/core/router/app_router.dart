@@ -13,11 +13,50 @@ import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 
 import '../../features/splash/presentation/screens/splash_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/signup_screen.dart';
+import '../../features/auth/presentation/screens/profile_screen.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
   return GoRouter(
     initialLocation: '/splash',
+    redirect: (context, state) {
+      if (authState.isLoading) {
+        return '/splash';
+      }
+
+      final isLoggedIn = authState.value != null;
+      final isLoggingIn =
+          state.uri.path == '/login' || state.uri.path == '/signup';
+      final isSplash = state.uri.path == '/splash';
+
+      if (isSplash) {
+        return isLoggedIn ? '/' : '/login';
+      }
+
+      if (!isLoggedIn && !isLoggingIn) {
+        return '/login';
+      }
+
+      if (isLoggedIn && isLoggingIn) {
+        return '/';
+      }
+
+      return null;
+    },
     routes: [
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),

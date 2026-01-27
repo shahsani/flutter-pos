@@ -5,8 +5,16 @@ import '../../../../core/database/database_helper.dart';
 import '../models/product.dart';
 
 // Repository Provider
+import '../../../auth/presentation/providers/auth_provider.dart';
+
+// Repository Provider
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
-  return ProductRepositoryImpl(DatabaseHelper.instance);
+  final authState = ref.watch(authProvider);
+  final userId = authState.value?.id;
+  if (userId == null) {
+    throw Exception('User not authenticated');
+  }
+  return ProductRepositoryImpl(DatabaseHelper.instance, userId);
 });
 
 // Products List Provider

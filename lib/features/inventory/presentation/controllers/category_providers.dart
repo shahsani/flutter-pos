@@ -5,8 +5,16 @@ import 'package:test_pos/features/inventory/domain/models/category_model.dart';
 import 'package:test_pos/features/inventory/domain/repositories/category_repository.dart';
 
 // Repository Provider
+import '../../../auth/presentation/providers/auth_provider.dart';
+
+// Repository Provider
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
-  return CategoryRepositoryImpl(DatabaseHelper.instance);
+  final authState = ref.watch(authProvider);
+  final userId = authState.value?.id;
+  if (userId == null) {
+    throw Exception('User not authenticated');
+  }
+  return CategoryRepositoryImpl(DatabaseHelper.instance, userId);
 });
 
 // Implementation of a notifier to manage the list of categories and allow real-time updates

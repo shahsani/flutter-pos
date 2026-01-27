@@ -5,8 +5,9 @@ import '../../../../core/database/database_helper.dart';
 
 class ReportRepositoryImpl implements ReportRepository {
   final DatabaseHelper _dbHelper;
+  final String _userId;
 
-  ReportRepositoryImpl(this._dbHelper);
+  ReportRepositoryImpl(this._dbHelper, this._userId);
 
   @override
   Future<SalesReport> getSalesReport(DateTime start, DateTime end) async {
@@ -21,9 +22,9 @@ class ReportRepositoryImpl implements ReportRepository {
         COUNT(*) as total_transactions,
         COALESCE(SUM(total_amount), 0) as total_sales
       FROM sales 
-      WHERE sale_date BETWEEN ? AND ?
+      WHERE sale_date BETWEEN ? AND ? AND user_id = ?
     ''',
-      [startEpoch, endEpoch],
+      [startEpoch, endEpoch, _userId],
     );
 
     // Parse results correctly
@@ -38,9 +39,9 @@ class ReportRepositoryImpl implements ReportRepository {
       SELECT COALESCE(SUM(si.quantity), 0) as total_items
       FROM sale_items si
       JOIN sales s ON si.sale_id = s.id
-      WHERE s.sale_date BETWEEN ? AND ?
+      WHERE s.sale_date BETWEEN ? AND ? AND s.user_id = ?
     ''',
-      [startEpoch, endEpoch],
+      [startEpoch, endEpoch, _userId],
     );
 
     final totalItemsSold =
@@ -53,10 +54,10 @@ class ReportRepositoryImpl implements ReportRepository {
         payment_method,
         COALESCE(SUM(total_amount), 0) as total
       FROM sales
-      WHERE sale_date BETWEEN ? AND ?
+      WHERE sale_date BETWEEN ? AND ? AND user_id = ?
       GROUP BY payment_method
     ''',
-      [startEpoch, endEpoch],
+      [startEpoch, endEpoch, _userId],
     );
 
     double totalCash = 0;
@@ -103,12 +104,12 @@ class ReportRepositoryImpl implements ReportRepository {
       FROM sale_items si
       JOIN sales s ON si.sale_id = s.id
       JOIN products p ON si.product_id = p.id
-      WHERE s.sale_date BETWEEN ? AND ?
+      WHERE s.sale_date BETWEEN ? AND ? AND s.user_id = ?
       GROUP BY p.id, p.name
       ORDER BY quantity_sold DESC
       LIMIT 5
     ''',
-      [startEpoch, endEpoch],
+      [startEpoch, endEpoch, _userId],
     );
 
     return result.map((row) {

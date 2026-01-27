@@ -4,8 +4,15 @@ import '../../../../core/database/database_helper.dart';
 import '../models/report_models.dart';
 import '../../data/repositories/report_repository_impl.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+
 final reportRepositoryProvider = Provider<ReportRepository>((ref) {
-  return ReportRepositoryImpl(DatabaseHelper.instance);
+  final authState = ref.watch(authProvider);
+  final userId = authState.value?.id;
+  if (userId == null) {
+    throw Exception('User not authenticated');
+  }
+  return ReportRepositoryImpl(DatabaseHelper.instance, userId);
 });
 
 final salesReportProvider = FutureProvider.family<SalesReport, ReportDateRange>(

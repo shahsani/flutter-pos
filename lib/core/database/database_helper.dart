@@ -21,8 +21,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
     );
   }
@@ -38,6 +39,18 @@ class DatabaseHelper {
     const numType = 'REAL'; // Floating point
     const intType = 'INTEGER';
 
+    // Users
+    await db.execute('''
+      CREATE TABLE users (
+        id $idType,
+        name $textType NOT NULL,
+        email $textType UNIQUE NOT NULL,
+        password $textType NOT NULL,
+        created_at $intType,
+        updated_at $intType
+      )
+    ''');
+
     // Customers
     await db.execute('''
       CREATE TABLE customers (
@@ -46,6 +59,7 @@ class DatabaseHelper {
         phone $textType,
         email $textType,
         address $textType,
+        user_id $textType,
         created_at $intType,
         updated_at $intType
       )
@@ -58,6 +72,7 @@ class DatabaseHelper {
         name $textType NOT NULL,
         parent_id $textType,
         description $textType,
+        user_id $textType,
         created_at $intType,
         updated_at $intType
       )
@@ -77,6 +92,7 @@ class DatabaseHelper {
         min_stock_level $intType DEFAULT 0,
         description $textType,
         image_path $textType,
+        user_id $textType,
         created_at $intType,
         updated_at $intType,
         FOREIGN KEY(category_id) REFERENCES categories(id)
@@ -91,6 +107,7 @@ class DatabaseHelper {
         contact $textType,
         email $textType,
         address $textType,
+        user_id $textType,
         created_at $intType,
         updated_at $intType
       )
@@ -107,6 +124,7 @@ class DatabaseHelper {
         tax $numType DEFAULT 0.0,
         payment_method $textType,
         sale_date $intType,
+        user_id $textType,
         created_at $intType,
         FOREIGN KEY(customer_id) REFERENCES customers(id)
       )
@@ -137,10 +155,47 @@ class DatabaseHelper {
         reference_number $textType,
         notes $textType,
         transaction_date $intType,
+        user_id $textType,
         created_at $intType,
         FOREIGN KEY(product_id) REFERENCES products(id)
       )
     ''');
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    const idType = 'TEXT PRIMARY KEY';
+    const textType = 'TEXT';
+    const intType = 'INTEGER';
+
+    if (oldVersion < 2) {
+      // Create Users table
+      await db.execute('''
+        CREATE TABLE users (
+          id $idType,
+          name $textType NOT NULL,
+          email $textType UNIQUE NOT NULL,
+          password $textType NOT NULL,
+          created_at $intType,
+          updated_at $intType
+        )
+      ''');
+
+      // Add user_id to existing tables
+      final tables = [
+        'customers',
+        'categories',
+        'products',
+        'suppliers',
+        'sales',
+        'stock_transactions',
+      ];
+
+      for (var table in tables) {
+        // Check if column exists strictly speaking is not needed if we are sure of versioning,
+        // but adding it blindly is fine in this context as we controlled the versions.
+        await db.execute('ALTER TABLE $table ADD COLUMN user_id TEXT');
+      }
+    }
   }
 
   Future<void> close() async {

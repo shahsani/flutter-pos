@@ -6,8 +6,16 @@ import '../models/sale.dart';
 import '../models/sale_item.dart';
 
 // Repository Provider
+import '../../../auth/presentation/providers/auth_provider.dart';
+
+// Repository Provider
 final salesRepositoryProvider = Provider<SalesRepository>((ref) {
-  return SalesRepositoryImpl(DatabaseHelper.instance);
+  final authState = ref.watch(authProvider);
+  final userId = authState.value?.id;
+  if (userId == null) {
+    throw Exception('User not authenticated');
+  }
+  return SalesRepositoryImpl(DatabaseHelper.instance, userId);
 });
 
 abstract class SalesRepository {

@@ -3,8 +3,15 @@ import '../../../../core/database/database_helper.dart';
 import '../models/customer.dart';
 import '../../data/repositories/customer_repository_impl.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+
 final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
-  return CustomerRepositoryImpl(DatabaseHelper.instance);
+  final authState = ref.watch(authProvider);
+  final userId = authState.value?.id;
+  if (userId == null) {
+    throw Exception('User not authenticated');
+  }
+  return CustomerRepositoryImpl(DatabaseHelper.instance, userId);
 });
 
 final customersProvider = FutureProvider<List<Customer>>((ref) {

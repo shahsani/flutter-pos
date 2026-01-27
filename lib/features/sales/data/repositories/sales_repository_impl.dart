@@ -7,15 +7,16 @@ import '../../../../core/database/database_helper.dart';
 
 class SalesRepositoryImpl implements SalesRepository {
   final DatabaseHelper _dbHelper;
+  final String _userId;
 
-  SalesRepositoryImpl(this._dbHelper);
+  SalesRepositoryImpl(this._dbHelper, this._userId);
 
   @override
   Future<void> createSale(Sale sale, List<SaleItem> items) async {
     final db = await _dbHelper.database;
     await db.transaction((txn) async {
       // 1. Insert Sale
-      await txn.insert('sales', sale.toMap());
+      await txn.insert('sales', sale.toMap()..['user_id'] = _userId);
 
       // 2. Insert Items
       for (final item in items) {
@@ -24,8 +25,8 @@ class SalesRepositoryImpl implements SalesRepository {
         // 3. Update Stock (Simple decrement for now)
         // In a real app we'd also log to 'stock_transactions'
         await txn.rawUpdate(
-          'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
-          [item.quantity, item.productId],
+          'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND user_id = ?',
+          [item.quantity, item.productId, _userId],
         );
       }
     });
@@ -34,14 +35,23 @@ class SalesRepositoryImpl implements SalesRepository {
   @override
   Future<List<Sale>> getSales() async {
     final db = await _dbHelper.database;
-    final result = await db.query('sales', orderBy: 'sale_date DESC');
+    final result = await db.query(
+      'sales',
+      where: 'user_id = ?',
+      whereArgs: [_userId],
+      orderBy: 'sale_date DESC',
+    );
     return result.map((map) => Sale.fromMap(map)).toList();
   }
 
   @override
   Future<Sale?> getSaleById(String id) async {
     final db = await _dbHelper.database;
-    final result = await db.query('sales', where: 'id = ?', whereArgs: [id]);
+    final result = await db.query(
+      'sales',
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, _userId],
+    );
     if (result.isNotEmpty) {
       final sale = Sale.fromMap(result.first);
       final items = await getSaleItems(id);
@@ -55,7 +65,8 @@ class SalesRepositoryImpl implements SalesRepository {
     final db = await _dbHelper.database;
     final result = await db.query(
       'sale_items',
-      where: 'sale_id = ?',
+      where:
+          'sale_id = ?', // Items belong to sale, which belongs to user. Implicitly safe if we trust sale_id access checks.
       whereArgs: [saleId],
     );
     return result.map((map) => SaleItem.fromMap(map)).toList();
@@ -64,7 +75,10 @@ class SalesRepositoryImpl implements SalesRepository {
   @override
   Future<String> generateInvoiceNumber() async {
     final db = await _dbHelper.database;
-    final result = await db.rawQuery('SELECT COUNT(*) as count FROM sales');
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM sales WHERE user_id = ?',
+      [_userId],
+    );
     final count = Sqflite.firstIntValue(result) ?? 0;
     // Simple format: INV-000001
     return 'INV-${(count + 1).toString().padLeft(6, '0')}';

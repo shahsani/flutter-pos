@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Drawer(
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: ListView(
@@ -71,7 +73,53 @@ class AppDrawer extends StatelessWidget {
           _DrawerItem(
             icon: FontAwesomeIcons.gear,
             title: 'Settings',
-            route: '/settings', // Needs to be implemented
+            route: '/settings',
+          ),
+          const Divider(),
+          _DrawerItem(
+            icon: FontAwesomeIcons.userPen,
+            title: 'Edit Profile',
+            route: '/profile',
+          ),
+          ListTile(
+            leading: const Icon(
+              FontAwesomeIcons.rightFromBracket,
+              color: Colors.red,
+            ),
+            title: const Text(
+              'Logout',
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+            onTap: () async {
+              // Show confirmation dialog? Or just logout. Let's just logout for now, or maybe small confirm.
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                if (context.mounted) {
+                  Navigator.pop(context); // close drawer
+                  ref.read(authProvider.notifier).logout();
+                }
+              }
+            },
           ),
         ],
       ),
