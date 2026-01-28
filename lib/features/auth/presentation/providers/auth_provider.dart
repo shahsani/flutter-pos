@@ -39,8 +39,8 @@ class AuthNotifier extends AsyncNotifier<User?> {
   }
 
   Future<void> signup(String name, String email, String password) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    // state = const AsyncValue.loading(); // Don't set global loading to prevent redirect
+    try {
       final repo = ref.read(authRepositoryProvider);
 
       if (await repo.checkEmailExists(email)) {
@@ -51,28 +51,36 @@ class AuthNotifier extends AsyncNotifier<User?> {
         id: const Uuid().v4(),
         name: name,
         email: email,
-        password: password, // In real app, hash this!
+        password: PasswordHasher.hashPassword(password),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
       await repo.createUser(user);
       await _saveSession(user.id);
-      return user;
-    });
+
+      // Only set state (and trigger redirect) on success
+      state = AsyncValue.data(user);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> login(String email, String password) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    // state = const AsyncValue.loading(); // Don't set global loading
+    try {
       final repo = ref.read(authRepositoryProvider);
       final user = await repo.login(email, password);
+
       if (user != null) {
         await _saveSession(user.id);
-        return user;
+        // Only set state (and trigger redirect) on success
+        state = AsyncValue.data(user);
       } else {
         throw Exception('Invalid email or password');
       }
-    });
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> logout() async {
